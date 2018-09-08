@@ -1,21 +1,23 @@
 from datetime import date
 from enum import IntEnum
 from gzip import GzipFile
-from logging import DEBUG, basicConfig, debug
+from logging import DEBUG, basicConfig, debug, exception
 from os import remove
 from os.path import isfile, join as path_join
 from pickle import dump, load
+from pycurl import Curl
 from random import shuffle
-from subprocess import PIPE, STDOUT, run
+from subprocess import run
 from sys import stdout
 from typing import Tuple
 
+from certifi import where
 from nltk.downloader import unzip
 from numpy import array, hstack, ndarray, uint64, zeros
 from pandas import Index, Series, read_csv
 from tqdm import tqdm as tqdm_
 
-from sentdex_nn_ml_tutorial.create_sentiment_featuresets import DATA_DIR, create_lexicon, lemmatizer, \
+from create_sentiment_featuresets import DATA_DIR, create_lexicon, lemmatizer, \
     process_sample, reallocate_ndarray, tqdm
 
 log_format = "%(relativeCreated)-6d,%(levelname)-8s,%(processName)-12s,%(threadName)-12s,%(name)-4s,%(module)-14s," \
@@ -176,6 +178,28 @@ def pickle_processed_data():
     write_design_matrix(train_filepath, '.'.join((train_filepath, "vectorized", "csv")), lexicon)
 
 
+def download_training_and_test_data():
+    training_and_test_data_url = "http://cs.stanford.edu/people/alecmgo/trainingandtestdata.zip"  # "https://docs
+    # .google.com/uc?export=download&id=0B04GJPshIjmPRnZManQwWEdTZjg"
+    training_and_test_data_zip = "data/trainingandtestdata.zip"
+    # # completed_process = run(["curl", "-L", training_and_test_data_url, ">", training_and_test_data_zip])
+    # completed_process = run(["curl", "-L %s > %s" % (training_and_test_data_url, training_and_test_data_zip)], check=True)  # , stdout=STDOUT, stderr=PIPE)
+    # debug(completed_process)
+
+    # As long as the file is opened in binary mode, both Python 2 and Python 3
+    # can write response body to it without decoding.
+    with open(training_and_test_data_zip, 'wb') as f:
+        c = Curl()  # shame there's no "with Curl() as c:"
+        c.setopt(c.CAINFO, where())
+        c.setopt(c.URL, training_and_test_data_url)
+        c.setopt(c.FOLLOWLOCATION, 1)
+        c.setopt(c.WRITEDATA, f)
+        c.perform()
+        c.close()
+
+    return training_and_test_data_zip
+
+
 def load_or_create_lexicon(train_filename):
     lexicon_filename = train_filename + ".lexicon.pickle"
     lexicon_filepath = path_join(DATA_DIR, lexicon_filename)
@@ -188,13 +212,12 @@ def load_or_create_lexicon(train_filename):
 
         train_filepath_no_shuf = train_filepath.replace('.shuf', '')
         if not isfile(train_filepath_no_shuf):
-            training_and_test_data_url = "https://docs.google.com/uc?export=download&id=0B04GJPshIjmPRnZManQwWEdTZjg"
-            training_and_test_data_zip = "data/trainingandtestdata.zip"
-            # completed_process = run(["curl", "-L", training_and_test_data_url, ">", training_and_test_data_zip])
-            completed_process = run(["curl", "-L %s > %s" % (training_and_test_data_url, training_and_test_data_zip)],
-                                    check=True)  # , stdout=STDOUT, stderr=PIPE)
-            debug(completed_process)
-            unzip(training_and_test_data_zip, "data")
+            training_and_test_data_zip = download_training_and_test_data()
+            try:
+                unzip(training_and_test_data_zip, "data")
+            except Exception as e:
+                exception(e)
+                raise e
             remove(training_and_test_data_zip)
 
         # bash shuffle

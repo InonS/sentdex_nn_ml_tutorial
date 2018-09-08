@@ -57,7 +57,7 @@ def create_bag_of_words(filenames: list):
     n_lines = 0
     bag_of_words = []
     for filename in filenames:
-        with open(filename) as file:
+        with open(filename, encoding='latin-1') as file:
             contents = file.readlines()
             for line in tqdm(contents[:max_lines], desc="appending to bag-of-words from %s" % filename, unit="line"):
                 words = process_sample(line)
