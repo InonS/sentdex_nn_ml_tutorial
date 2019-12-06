@@ -1,8 +1,9 @@
-from logging import DEBUG, basicConfig, info
+from logging import DEBUG, basicConfig, debug, info
 from sys import getsizeof, stdout
 
 import tensorflow as tf
 from numpy import array
+from tqdm import trange
 
 from create_sentiment_featuresets import unpickle_design_matrix
 
@@ -80,7 +81,7 @@ def model(data):
 
 
 def mean_cross_entropy(labels, logits):
-    return tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=logits))
+    return tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=logits))
 
 
 def run(data, labels):
@@ -89,13 +90,16 @@ def run(data, labels):
     optimizer = tf.train.AdamOptimizer().minimize(cost)
 
     with tf.Session() as sess:
+        debug(sess.list_devices())
         sess.run(tf.global_variables_initializer())
-        train(cost, optimizer, sess)
+        train(cost, optimizer, sess, max_epochs=20)
         test(prediction)
 
 
 def train(cost, optimizer, sess, max_epochs=10):
-    for epoch in range(max_epochs):
+    postfix = dict()
+    epoch_iterator = trange(max_epochs, unit="epoch", postfix=postfix)
+    for _ in epoch_iterator:
         epoch_cost = 0
 
         total_batches = int(NUM_TRAIN_SAMPLES / BATCH_SIZE)
@@ -108,14 +112,15 @@ def train(cost, optimizer, sess, max_epochs=10):
             # info("Batch %d completed out of %d batches, cost: %g" % (batch, total_batches, batch_cost))
             epoch_cost += batch_cost
 
-        info("Epoch %d completed out of %d epochs, cost: %g " % (epoch + 1, max_epochs, epoch_cost))
+        # info("Epoch %d completed out of %d epochs, cost: %g " % (epoch + 1, max_epochs, epoch_cost))
+        epoch_iterator.set_postfix({"cost": epoch_cost})
 
 
 def test(prediction):
     test_data = {x: x_test, y: y_test}  # note placeholder keys
     correct_ones = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_ones, tf.float32))
-    info("Accuracy: %g" % accuracy.eval(test_data))
+    info("Accuracy: %0.2g" % accuracy.eval(test_data))
 
 
 run(x, y)
