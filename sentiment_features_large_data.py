@@ -5,7 +5,6 @@ from logging import DEBUG, basicConfig, debug, exception
 from os import remove
 from os.path import isfile, join as path_join
 from pickle import dump, load
-from pycurl import Curl
 from random import shuffle
 from subprocess import run
 from sys import stdout
@@ -15,6 +14,7 @@ from certifi import where
 from nltk.downloader import unzip
 from numpy import array, hstack, ndarray, uint64, zeros
 from pandas import Index, Series, read_csv
+from pycurl import Curl
 from tqdm import tqdm as tqdm_
 
 from create_sentiment_featuresets import DATA_DIR, create_lexicon, lemmatizer, \

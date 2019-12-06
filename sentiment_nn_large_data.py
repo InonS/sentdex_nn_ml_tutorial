@@ -15,8 +15,6 @@ from math import sqrt
 from os import replace
 from os.path import join as path_join, sep
 
-from create_sentiment_featuresets import DATA_DIR
-from sentiment_features_large_data import generate_design_matrix, get_paths_and_lexicon
 from tensorflow import Session, Variable, argmax, constant, equal, expand_dims, float32, global_variables_initializer, \
     name_scope, placeholder, random_normal, reduce_mean, string, to_float
 from tensorflow.contrib.learn.python.learn.utils.saved_model_export_utils import get_timestamped_export_dir
@@ -34,8 +32,11 @@ from tensorflow.python.training.adam import AdamOptimizer
 from tensorflow.python.training.learning_rate_decay import exponential_decay
 from tensorflow.python.training.tensorboard_logging import DEBUG, debug, info, set_summary_writer, set_verbosity
 
+from create_sentiment_featuresets import DATA_DIR
+from sentiment_features_large_data import generate_design_matrix, get_paths_and_lexicon
+
 # logs locations
-LOGDIR = str(get_timestamped_export_dir("log"))[2:-2]
+LOGDIR = str(get_timestamped_export_dir("log"))[2:-2] # Deprecation warning. Switch to tf.estimator.Exporter and associated utilities
 TRAIN_DIR = path_join(LOGDIR, "train")
 TEST_DIR = path_join(LOGDIR, "test")
 
